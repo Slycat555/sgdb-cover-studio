@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cover Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="2.5" width="14" height="19" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 7h6M7 10.5h6M7 14h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.5 5.5v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity=".5"/></svg>
+    <span>Cover Studio</span>
+    <small>for SteamGridDB</small>
+  </div>
+  <div class="search">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input id="searchInput" type="search" placeholder="Search a game — your library or all of SteamGridDB" autocomplete="off" spellcheck="false">
+    <div id="searchResults" class="results" hidden></div>
+  </div>
+  <button id="uiThemeBtn" class="btn ghost small">☀ Light</button>
+  <button id="keyBtn" class="btn ghost small">Settings</button>
+</header>
+
+<main class="layout">
+  <!-- Left: game + artwork sources -->
+  <aside class="panel left">
+    <section id="gameCard" class="game-card empty">
+      <div class="game-empty">
+        <strong>Pick a game to start</strong>
+        <p>Search above. Games installed in Steam show up first and get their official art, fonts and colours automatically.</p>
+      </div>
+      <div class="game-info">
+        <div class="game-name" id="gameName"></div>
+        <div class="game-meta" id="gameMeta"></div>
+        <div class="tag-row" id="gameTags"></div>
+      </div>
+    </section>
+
+    <section class="assets">
+      <div class="tabs" id="assetTabs" role="tablist"></div>
+      <div class="slot-row">
+        <span>Use as</span>
+        <div class="seg" id="slotSeg"></div>
+      </div>
+      <div id="assetGrid" class="asset-grid"></div>
+      <div class="asset-actions">
+        <button id="moreBtn" class="btn ghost small" hidden>Load more</button>
+        <label class="btn ghost small file-btn">Upload image<input id="uploadImg" type="file" accept="image/*" hidden></label>
+      </div>
+    </section>
+  </aside>
+
+  <!-- Center: stage -->
+  <section class="stage">
+    <div class="stage-top">
+      <div class="tpl-tabs" id="tplTabs"></div>
+      <div class="stage-tools">
+        <button id="view3dBtn" class="btn ghost small" title="See the case as a 3D box">3D view</button>
+        <button id="shuffleBtn" class="btn ghost small" title="Try different art from this game">Shuffle art</button>
+      </div>
+    </div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas" width="1535" height="2173"></canvas>
+      <div class="canvas-loading" id="canvasLoading" hidden><span class="spinner"></span><span id="loadingText">Loading artwork…</span></div>
+    </div>
+    <p class="hint" id="stageHint">Drag the logo or key art to move it · scroll over them to resize</p>
+    <div class="export-bar">
+      <div class="export-group">
+        <button id="downloadBtn" class="btn primary">Download PNG</button>
+        <button id="pdfBtn" class="btn ghost" hidden>Print PDF</button>
+        <button id="downloadAllBtn" class="btn ghost">Download all</button>
+      </div>
+      <div class="export-group" id="upscaleGroup" hidden>
+        <label class="id-field" title="Auto: art that would print below its native resolution is sharpened with Upscayl as soon as it loads (you see it in the preview). “+ final” also upscales the finished render when saving.">Upscayl
+          <select id="upscaleSel">
+            <option value="auto">Auto</option><option value="auto2">Auto + final 2×</option>
+            <option value="auto4">Auto + final 4×</option><option value="off">Off</option>
+          </select>
+        </label>
+        <select id="upscaleModel" title="Upscayl model"></select>
+      </div>
+      <div class="export-group steam" id="steamGroup" hidden>
+        <select id="steamUser" title="Steam account"></select>
+        <label class="id-field" title="Steam app id (or non-Steam shortcut id) the art is written for">ID <input id="targetId" inputmode="numeric" placeholder="app id"></label>
+        <button id="applyBtn" class="btn ghost">Set in Steam</button>
+        <button id="applyAllBtn" class="btn ghost">Set full Steam set</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: controls -->
+  <aside class="panel right" id="controls"></aside>
+</main>
+
+<dialog id="keyDialog" class="settings">
+  <form method="dialog" id="keyForm">
+    <h2>Settings</h2>
+    <p>API keys are stored only on this computer, in <code id="configPath">your settings folder</code>. Leave a field empty to keep the key you have.</p>
+
+    <section class="key-section">
+      <div class="key-head"><h3>SteamGridDB API key</h3><span class="key-status" id="sgdbStatus"></span></div>
+      <p>Needed to search games and artwork. Free: sign in at <a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" rel="noopener">steamgriddb.com → Preferences → API</a> and generate a key.</p>
+      <div class="key-row">
+        <input id="keyInput" type="password" placeholder="Paste SteamGridDB key" autocomplete="off" spellcheck="false">
+        <button type="button" class="btn ghost small" id="sgdbRemove" hidden>Remove</button>
+      </div>
+    </section>
+
+    <section class="key-section">
+      <div class="key-head"><h3>Gemini API key <small>optional</small></h3><span class="key-status" id="geminiStatus"></span></div>
+      <p>Lets “Continue front onto spine” paint the front artwork round onto the spine (about $0.13 per painting). Get one from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio → API keys</a>.</p>
+      <div class="key-row">
+        <input id="geminiInput" type="password" placeholder="Paste Gemini key" autocomplete="off" spellcheck="false">
+        <button type="button" class="btn ghost small" id="geminiRemove" hidden>Remove</button>
+      </div>
+    </section>
+
+    <p class="form-error" id="keyError" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="keyCancel">Close</button>
+      <button type="submit" class="btn primary" id="keySave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="viewer3d" class="viewer3d">
+  <div class="v3d-head">
+    <strong>3D preview</strong>
+    <div class="v3d-tools">
+      <div class="seg">
+        <button id="v3dFront">Front</button><button id="v3dSpine">Spine</button><button id="v3dBack">Back</button>
+      </div>
+      <label class="toggle">Spin <input type="checkbox" id="v3dSpin"></label>
+      <label class="id-field">Case
+        <select id="v3dShell">
+          <option value="black">Black</option><option value="clear">Clear</option><option value="blue">Blu-ray blue</option>
+          <option value="red">Red</option><option value="white">White</option>
+        </select>
+      </label>
+      <button class="btn ghost small" id="v3dClose">Close</button>
+    </div>
+  </div>
+  <div class="v3d-stage" id="v3dStage">
+    <div class="v3d-floor" id="v3dFloor"></div>
+    <div class="v3d-zoom" id="v3dZoom"><div class="v3d-box" id="v3dBox"></div></div>
+  </div>
+  <p class="hint v3d-hint">Drag to turn · scroll to zoom</p>
+</dialog>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

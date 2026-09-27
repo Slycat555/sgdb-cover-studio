@@ -1,0 +1,4 @@
+{
+  "_about": "Fonts known to be used by specific games. Keys are steam:<appid> (or name:<lowercase name>). head/body are font names: commercial fonts fall back to a free lookalike until you upload the real file in the app.",
+  "steam:2773280": { "name": "ANEURISM IV", "head": "FF Trixie HD", "body": "FF Trixie HD" }
+}
